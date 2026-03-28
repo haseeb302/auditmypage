@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
-import path from "node:path";
+import { resolveMonorepoRoot } from "./lib/monorepoRoot";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    /** Monorepo root (`pageaudit/`) so Turbopack doesn’t pick a parent lockfile by mistake. */
-    root: path.resolve(process.cwd(), "../.."),
+    /** Stable monorepo root whether `cwd` is `apps/frontend` or the repo root on Vercel. */
+    root: resolveMonorepoRoot(process.cwd()),
   },
 };
 

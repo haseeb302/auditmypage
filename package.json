@@ -4,7 +4,7 @@
   "workspaces": [
     "apps/*"
   ],
-  "packageManager": "npm@10.9.0",
+  "packageManager": "npm@11.9.0",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -16,9 +16,6 @@
     "db:studio": "npm run db:studio -w @pageaudit/scraper"
   },
   "devDependencies": {
-    "turbo": "^2.5.5"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "turbo": "^2.0.0"
   }
 }
