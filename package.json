@@ -1,0 +1,21 @@
+{
+  "name": "pageaudit-monorepo",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "npm run db:generate -w @pageaudit/scraper",
+    "db:migrate": "npm run db:migrate -w @pageaudit/scraper",
+    "db:push": "npm run db:push -w @pageaudit/scraper",
+    "db:studio": "npm run db:studio -w @pageaudit/scraper"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
