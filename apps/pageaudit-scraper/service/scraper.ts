@@ -3,10 +3,17 @@ import type { Page } from "puppeteer";
 import { browserManager } from "../lib/puppeteer";
 import type { PageData } from "../types/pageData";
 
-const PAGE_TIMEOUT_MS = Number.parseInt(process.env.PAGE_TIMEOUT_MS ?? "20000", 10);
+const PAGE_TIMEOUT_MS = Number.parseInt(
+  process.env.PAGE_TIMEOUT_MS ?? "20000",
+  10,
+);
 const JS_SETTLE_MS = Number.parseInt(process.env.JS_SETTLE_MS ?? "2000", 10);
 
-const MOBILE_VIEWPORT = { width: 375, height: 812, deviceScaleFactor: 2 } as const;
+const MOBILE_VIEWPORT = {
+  width: 375,
+  height: 812,
+  deviceScaleFactor: 2,
+} as const;
 
 export type ScraperErrorCode =
   | "PAGE_TIMEOUT"
@@ -18,7 +25,11 @@ export class ScraperError extends Error {
   code: ScraperErrorCode;
   meta?: Record<string, unknown>;
 
-  constructor(code: ScraperErrorCode, message: string, meta?: Record<string, unknown>) {
+  constructor(
+    code: ScraperErrorCode,
+    message: string,
+    meta?: Record<string, unknown>,
+  ) {
     super(message);
     this.name = "ScraperError";
     this.code = code;
@@ -37,7 +48,12 @@ type RawDesktop = {
   h2s: string[];
   h3s: string[];
   heroText: string;
-  ctas: Array<{ text: string; tagName: string; href: string; aboveFold: boolean }>;
+  ctas: Array<{
+    text: string;
+    tagName: string;
+    href: string;
+    aboveFold: boolean;
+  }>;
   logoCount: number;
   logoSamples: string[];
   testimonialSamples: string[];
@@ -67,17 +83,28 @@ function mapNavigationError(error: unknown): ScraperError {
   const message = error instanceof Error ? error.message : "Navigation failed";
 
   if (/timeout/i.test(message)) {
-    return new ScraperError("PAGE_TIMEOUT", "Page took too long to load", { raw: message });
+    return new ScraperError("PAGE_TIMEOUT", "Page took too long to load", {
+      raw: message,
+    });
   }
 
   if (/ERR_|net::/i.test(message)) {
-    return new ScraperError("NAVIGATION_FAILED", "Could not reach the target URL", { raw: message });
+    return new ScraperError(
+      "NAVIGATION_FAILED",
+      "Could not reach the target URL",
+      { raw: message },
+    );
   }
 
   return new ScraperError("NAVIGATION_FAILED", message, { raw: message });
 }
 
-function toPageData(url: string, d: RawDesktop, m: RawMobile, scrapedAt: string): PageData {
+function toPageData(
+  url: string,
+  d: RawDesktop,
+  m: RawMobile,
+  scrapedAt: string,
+): PageData {
   const trustSignals: PageData["trustSignals"] = {
     logos: {
       count: d.logoCount,
@@ -97,7 +124,9 @@ function toPageData(url: string, d: RawDesktop, m: RawMobile, scrapedAt: string)
     },
   };
 
-  const jsonLd = d.jsonLd.filter((x): x is object => x !== null && typeof x === "object");
+  const jsonLd = d.jsonLd.filter(
+    (x): x is object => x !== null && typeof x === "object",
+  );
 
   return {
     url,
@@ -150,15 +179,30 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
   return page.evaluate(() => {
     const title = document.title?.trim() || "";
     const metaDesc =
-      document.querySelector('meta[name="description"]')?.getAttribute("content")?.trim() ||
-      document.querySelector('meta[property="og:description"]')?.getAttribute("content")?.trim() ||
+      document
+        .querySelector('meta[name="description"]')
+        ?.getAttribute("content")
+        ?.trim() ||
+      document
+        .querySelector('meta[property="og:description"]')
+        ?.getAttribute("content")
+        ?.trim() ||
       "";
     const ogTitle =
-      document.querySelector('meta[property="og:title"]')?.getAttribute("content")?.trim() || "";
+      document
+        .querySelector('meta[property="og:title"]')
+        ?.getAttribute("content")
+        ?.trim() || "";
     const ogDesc =
-      document.querySelector('meta[property="og:description"]')?.getAttribute("content")?.trim() || "";
+      document
+        .querySelector('meta[property="og:description"]')
+        ?.getAttribute("content")
+        ?.trim() || "";
     const canonical =
-      document.querySelector('link[rel="canonical"]')?.getAttribute("href")?.trim() || "";
+      document
+        .querySelector('link[rel="canonical"]')
+        ?.getAttribute("href")
+        ?.trim() || "";
     const viewportMeta = document.querySelector('meta[name="viewport"]');
     const hasViewport = !!viewportMeta;
 
@@ -208,7 +252,10 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
     })();
 
     const h1Text = h1El?.textContent?.trim() || "";
-    const heroText = [h1Text, subheadline, heroTextChunk].filter(Boolean).join("\n\n").slice(0, 2000);
+    const heroText = [h1Text, subheadline, heroTextChunk]
+      .filter(Boolean)
+      .join("\n\n")
+      .slice(0, 2000);
 
     const h1s = Array.from(document.querySelectorAll("h1"))
       .map((el) => el.textContent?.trim() || "")
@@ -249,11 +296,13 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
     );
     const logoEls = logoElsAll.slice(0, 20);
 
-    const logoSamples = logoEls.map((img) => {
-      const alt = img.getAttribute("alt")?.trim();
-      const src = img.getAttribute("src")?.trim() || "";
-      return alt || src || "";
-    }).filter(Boolean);
+    const logoSamples = logoEls
+      .map((img) => {
+        const alt = img.getAttribute("alt")?.trim();
+        const src = img.getAttribute("src")?.trim() || "";
+        return alt || src || "";
+      })
+      .filter(Boolean);
 
     const testimonialSamples = Array.from(
       document.querySelectorAll(
@@ -299,16 +348,21 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
 
     const forms = Array.from(document.querySelectorAll("form"))
       .map((f) => {
-        const inputs = Array.from(f.querySelectorAll("input, textarea, select"));
+        const inputs = Array.from(
+          f.querySelectorAll("input, textarea, select"),
+        );
         const hasEmail = inputs.some((i) => {
           const type = (i.getAttribute("type") || "").toLowerCase();
           const name = (i.getAttribute("name") || "").toLowerCase();
           return type === "email" || name.includes("email");
         });
-        const submit = f.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
+        const submit = f.querySelector(
+          'button[type="submit"], input[type="submit"], button:not([type])',
+        );
         let submitText = "";
         if (submit) {
-          if (submit instanceof HTMLInputElement) submitText = submit.value?.trim() || "";
+          if (submit instanceof HTMLInputElement)
+            submitText = submit.value?.trim() || "";
           else submitText = submit.textContent?.trim() || "";
         }
         return {
@@ -330,7 +384,9 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
     }));
 
     const jsonLd: unknown[] = [];
-    for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
+    for (const s of document.querySelectorAll(
+      'script[type="application/ld+json"]',
+    )) {
       const raw = s.textContent?.trim();
       if (!raw) continue;
       try {
@@ -380,7 +436,9 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
       imageWithAlt: imageRows.filter((i) => i.hasAlt).length,
       imageWithoutAlt: imageRows.filter((i) => !i.hasAlt).length,
       imageLazyLoaded: imageRows.filter((i) => i.loading === "lazy").length,
-      imageAboveFoldNotLazy: imageRows.filter((i) => i.aboveFold && i.loading !== "lazy").length,
+      imageAboveFoldNotLazy: imageRows.filter(
+        (i) => i.aboveFold && i.loading !== "lazy",
+      ).length,
       bodyText: bodyTextFull.slice(0, 12000),
       jsonLd,
       hasFaq,
@@ -397,7 +455,8 @@ async function extractMobile(page: Page): Promise<RawMobile> {
       "[class*='hamburger'], [class*='mobile-menu'], [class*='menu-toggle'], [class*='nav-toggle'], [aria-label*='menu']",
     );
     const hasHorizontalOverflow =
-      document.documentElement.scrollWidth > document.documentElement.clientWidth;
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth;
     return { hasHorizontalOverflow, hasMobileMenu };
   });
 }
@@ -431,8 +490,6 @@ export async function scrapePage(url: string): Promise<PageData> {
       response = await page.goto(url, {
         waitUntil: "load",
         timeout: PAGE_TIMEOUT_MS,
-        // Prefer `load` over `networkidle2`: long-lived connections / SPAs often
-        // never reach "network idle", which matches current Puppeteer guidance.
       });
     } catch (error) {
       throw mapNavigationError(error);

@@ -6,7 +6,13 @@ import { NavBar } from "@/app/pageaudit/components/NavBar";
 import { APP_CSS } from "@/app/pageaudit/design-system/theme";
 import type { AuditResult } from "@/app/pageaudit/types";
 
-export function AuditShareClient({ audit }: { audit: AuditResult }) {
+export function AuditShareClient({
+  audit,
+  id,
+}: {
+  audit: AuditResult;
+  id: string;
+}) {
   const router = useRouter();
 
   function goHome() {
@@ -17,7 +23,7 @@ export function AuditShareClient({ audit }: { audit: AuditResult }) {
     <>
       <style>{APP_CSS}</style>
       <NavBar onHome={goHome} />
-      <AuditResultsPage audit={audit} onBack={goHome} />
+      <AuditResultsPage audit={audit} onBack={goHome} id={id} />
     </>
   );
 }

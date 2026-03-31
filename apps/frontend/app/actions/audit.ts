@@ -1,5 +1,6 @@
 "use server";
 
+import { scraperServiceBaseUrl } from "@/app/lib/scraperBaseUrl";
 import type { AuditResult } from "@/app/pageaudit/types";
 
 export type AuditActionResult =
@@ -11,7 +12,7 @@ export type AuditActionResult =
  * All scraping, OpenAI, and Zod validation run in the scraper service.
  */
 export async function requestAudit(rawUrl: string): Promise<AuditActionResult> {
-  const base = process.env.SCRAPER_SERVICE_URL?.replace(/\/$/, "");
+  const base = scraperServiceBaseUrl();
   const key = process.env.SCRAPER_API_KEY;
   if (!base || !key) {
     return {

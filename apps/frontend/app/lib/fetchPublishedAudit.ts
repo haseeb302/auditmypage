@@ -1,3 +1,4 @@
+import { scraperServiceBaseUrl } from "@/app/lib/scraperBaseUrl";
 import type { AuditResult } from "@/app/pageaudit/types";
 
 /**
@@ -11,7 +12,7 @@ export async function fetchPublishedAudit(
     return null;
   }
 
-  const base = process.env.SCRAPER_SERVICE_URL?.replace(/\/$/, "");
+  const base = scraperServiceBaseUrl();
   if (!base) {
     return null;
   }

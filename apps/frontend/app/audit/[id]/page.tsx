@@ -9,8 +9,9 @@ type PageProps = {
 export default async function AuditByIdPage({ params }: PageProps) {
   const { id } = await params;
   const audit = await fetchPublishedAudit(id);
+
   if (!audit) {
     notFound();
   }
-  return <AuditShareClient audit={audit} />;
+  return <AuditShareClient audit={audit} id={id} />;
 }

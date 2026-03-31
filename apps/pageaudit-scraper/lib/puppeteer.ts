@@ -1,15 +1,4 @@
 import puppeteer, { Browser } from "puppeteer";
-
-/**
- * Browser singleton for the scraper service.
- *
- * Launch options follow current Puppeteer / Chrome guidance:
- * - {@link https://pptr.dev/guides/docker Docker & troubleshooting}
- * - {@link https://developer.chrome.com/blog/chrome-headless-shell headless modes}
- *
- * `headless: true` uses Chrome’s **new headless** (not the legacy shell).
- * Use `headless: "shell"` only if you need the old headless binary for compatibility.
- */
 class BrowserManager {
   browser: Browser | null = null;
   private isLaunching = false;

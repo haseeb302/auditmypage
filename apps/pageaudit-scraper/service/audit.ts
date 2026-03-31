@@ -86,9 +86,9 @@ auditRoute.post("/", async (req, res) => {
     return;
   }
 
-  if (!checkAuditRateLimit(clientIp(req))) {
+  if (!(await checkAuditRateLimit(clientIp(req)))) {
     res.status(429).json({
-      error: "Rate limit exceeded. You can audit 5 pages per hour.",
+      error: "You’ve reached the free limit (2 audits every 12 hours for this IP).",
     });
     return;
   }

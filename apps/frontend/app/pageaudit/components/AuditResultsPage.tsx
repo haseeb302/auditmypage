@@ -6,19 +6,21 @@ import { fadeUp, scoreBg, scoreColor, stagger } from "../design-system/theme";
 import type { AuditResult } from "../types";
 import { FindingGroup } from "./FindingGroup";
 import { ScoreRing } from "./ScoreRing";
+import { useRouter } from "next/navigation";
 
 type AuditResultsPageProps = {
   audit: AuditResult;
+  id: string;
   onBack: () => void;
 };
 
-export function AuditResultsPage({ audit, onBack }: AuditResultsPageProps) {
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+export function AuditResultsPage({ audit, onBack, id }: AuditResultsPageProps) {
   const [copied, setCopied] = useState(false);
 
   function copyLink() {
-    navigator.clipboard?.writeText(
-      `https://pageaudit.io/audit/${Math.random().toString(36).slice(2, 10)}`,
-    );
+    navigator.clipboard?.writeText(`${appUrl}/audit/${id}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -94,8 +96,7 @@ export function AuditResultsPage({ audit, onBack }: AuditResultsPageProps) {
           Landing page audit
         </motion.h1>
         <motion.p className="audit-sub" variants={fadeUp} custom={3}>
-          {audit.dimensions.reduce((acc, dim) => acc + dim.findings.length, 0)}
-          {" "}
+          {audit.dimensions.reduce((acc, dim) => acc + dim.findings.length, 0)}{" "}
           findings across 6 dimensions
         </motion.p>
       </motion.div>
@@ -106,7 +107,9 @@ export function AuditResultsPage({ audit, onBack }: AuditResultsPageProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.5 }}
       >
-        <span className="share-text">Share this report with your team or clients.</span>
+        <span className="share-text">
+          Share this report with your team or clients.
+        </span>
         <button className="share-btn share-btn-ghost" onClick={onBack}>
           Audit another
         </button>

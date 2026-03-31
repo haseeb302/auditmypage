@@ -6,7 +6,6 @@ export const FindingSchema = z.object({
   fix: z.string(),
 });
 
-/** One scored dimension (no `key` field — the property name under `dimensions` is the key). */
 const DimensionBlockSchema = z.object({
   label: z.string().min(1),
   score: z.number().min(0).max(100),
@@ -14,10 +13,6 @@ const DimensionBlockSchema = z.object({
   findings: z.array(FindingSchema),
 });
 
-/**
- * OpenAI strict `json_schema` does not accept Zod tuples (they become invalid oneOf arrays).
- * A single object with six required properties maps to a plain JSON Schema object — supported.
- */
 export const AuditResultSchema = z.object({
   url: z.string().min(1),
   score: z.number().min(0).max(100),

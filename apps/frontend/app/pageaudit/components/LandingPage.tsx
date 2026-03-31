@@ -6,6 +6,12 @@ import { requestAudit } from "@/app/actions/audit";
 import { LANDING_FEATURES } from "../data/features";
 import { fadeUp, stagger } from "../design-system/theme";
 import { useRouter } from "next/navigation";
+import {
+  ArrowRightCircle,
+  LayoutPanelLeft,
+  BadgeCheck,
+  Smartphone,
+} from "lucide-react";
 
 const LOADING_STEPS = [
   "Fetching your page…",
@@ -170,24 +176,42 @@ export function LandingPage() {
         </motion.div>
 
         <div className="features-grid">
-          {LANDING_FEATURES.map((feature, index) => (
-            <motion.div
-              key={index}
-              className="feature-card"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{
-                duration: 0.5,
-                delay: index * 0.07,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            >
-              <div className="feature-icon">{feature.icon}</div>
-              <div className="feature-name">{feature.name}</div>
-              <div className="feature-desc">{feature.desc}</div>
-            </motion.div>
-          ))}
+          {LANDING_FEATURES.map((feature, index) => {
+            let Icon: React.ComponentType<{ size?: number; strokeWidth?: number }> | null =
+              null;
+
+            // Prefer icon library for all but clarity & trust signals.
+            if (feature.name === "CTA Strength") {
+              Icon = ArrowRightCircle;
+            } else if (feature.name === "Page Structure") {
+              Icon = LayoutPanelLeft;
+            } else if (feature.name === "Value Proposition") {
+              Icon = BadgeCheck;
+            } else if (feature.name === "Mobile Readiness") {
+              Icon = Smartphone;
+            }
+
+            return (
+              <motion.div
+                key={index}
+                className="feature-card"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{
+                  duration: 0.5,
+                  delay: index * 0.07,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                <div className="feature-icon">
+                  {Icon ? <Icon size={18} strokeWidth={2} /> : feature.icon}
+                </div>
+                <div className="feature-name">{feature.name}</div>
+                <div className="feature-desc">{feature.desc}</div>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
