@@ -36,6 +36,9 @@ export type PageData = {
     aboveFoldNotLazy: number;
   };
   bodyText: string;
+  faqItems: Array<{ q: string; a: string }>;
+  pricingText: string;
+  featureBullets: string[];
   jsonLd: object[];
   pageSignals: {
     hasFaq: boolean;

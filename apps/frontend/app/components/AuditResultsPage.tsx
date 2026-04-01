@@ -2,11 +2,17 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { fadeUp, scoreBg, scoreColor, stagger } from "../design-system/theme";
-import type { AuditResult } from "../types";
+import {
+  fadeUp,
+  scoreBg,
+  scoreColor,
+  stagger,
+} from "@/app/design-system/theme";
+import type { AuditResult } from "@/app/types";
 import { FindingGroup } from "./FindingGroup";
 import { ScoreRing } from "./ScoreRing";
-import { useRouter } from "next/navigation";
+import { ExternalLink } from "lucide-react";
+import { HASEEB_LINKEDIN_URL } from "@/app/constants";
 
 type AuditResultsPageProps = {
   audit: AuditResult;
@@ -83,12 +89,35 @@ export function AuditResultsPage({ audit, onBack, id }: AuditResultsPageProps) {
         </motion.div>
 
         <motion.div className="audit-url-row" variants={fadeUp} custom={1}>
-          <div className="audit-url-badge">
+          <a
+            className="audit-url-badge"
+            href={audit.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{ textDecoration: "none" }}
+          >
             <div className="audit-url-dot" />
-            {audit.url}
-          </div>
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <span>{audit.url}</span>
+              <ExternalLink size={13} strokeWidth={2} />
+            </span>
+          </a>
           <span style={{ fontSize: 12.5, color: "var(--ink-3)" }}>
-            {audit.scanned_at}
+            {Number.isNaN(Date.parse(audit.created_at ?? audit.scanned_at))
+              ? (audit.created_at ?? audit.scanned_at)
+              : new Date(audit.created_at ?? audit.scanned_at).toLocaleString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  },
+                )}
           </span>
         </motion.div>
 
@@ -196,7 +225,21 @@ export function AuditResultsPage({ audit, onBack, id }: AuditResultsPageProps) {
 
       <footer style={{ marginTop: 60, padding: "28px 0 0" }}>
         <div className="footer-logo">PageAudit</div>
-        <div className="footer-copy">© 2025 · Free to use</div>
+        <div>
+          <a
+            href={HASEEB_LINKEDIN_URL}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              textDecoration: "underline",
+              fontSize: 14,
+              fontWeight: "bolder",
+            }}
+          >
+            @haseeb
+          </a>
+        </div>
+        <div className="footer-copy">© 2026 · Free to use</div>
       </footer>
     </motion.div>
   );

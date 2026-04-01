@@ -1,5 +1,5 @@
 import type { Variants } from "framer-motion";
-import type { Severity } from "../types";
+import type { Severity } from "@/app/types";
 
 export const SEVERITY_CONFIG: Record<
   Severity,
@@ -180,7 +180,7 @@ export const APP_CSS = `
   .finding-sev-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
   .finding-issue { font-size: 14px; color: var(--ink); line-height: 1.6; margin-bottom: 10px; }
   .finding-fix-wrap { background: var(--cream); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; border-left: 3px solid var(--forest); }
-  .finding-fix-label { font-size: 10.5px; font-weight: 500; color: var(--forest); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+  .finding-fix-label { font-size: 10.5px; font-weight: 600; color: var(--forest); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
   .finding-fix { font-size: 13.5px; color: var(--ink-2); line-height: 1.65; }
 
   .share-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #fff; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px 22px; margin-bottom: 36px; }

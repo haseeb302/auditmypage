@@ -1,5 +1,10 @@
-import { PageAuditApp } from "./pageaudit/PageAuditApp";
+import { Suspense } from "react";
+import { PageAuditApp } from "./components/PageAuditApp";
 
 export default function Home() {
-  return <PageAuditApp />;
+  return (
+    <Suspense fallback={null}>
+      <PageAuditApp />
+    </Suspense>
+  );
 }

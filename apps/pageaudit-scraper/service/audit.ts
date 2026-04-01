@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { prisma } from "../lib/prisma";
 import { checkAuditRateLimit } from "../lib/rateLimit";
 import { UrlBodySchema } from "../lib/urlBodySchema";
+import { normalizeAuditUrl } from "../lib/normalizeAuditUrl";
 import { analyseWithAI } from "./aiAnalyser";
 import { scrapePage, ScraperError } from "./scraper";
 
@@ -26,6 +27,38 @@ function requireApiKey(req: Request, res: Response): boolean {
   return true;
 }
 
+/** Lookup by URL (for samples / public links) — no API key. */
+auditRoute.get("/by-url", async (req, res) => {
+  const rawUrl = req.query.url;
+  if (typeof rawUrl !== "string" || !rawUrl.trim()) {
+    res.status(400).json({ error: "Missing url query parameter" });
+    return;
+  }
+
+  const normalized = normalizeAuditUrl(rawUrl);
+  if (!normalized) {
+    res.status(400).json({ error: "Invalid url" });
+    return;
+  }
+
+  try {
+    const row = await prisma.pageAudit.findFirst({
+      where: { sourceUrl: normalized },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!row) {
+      res.status(404).json({ error: "Audit not found" });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      auditId: row.id,
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to resolve audit by URL" });
+  }
+});
+
 /** Public read for share links — no API key. */
 auditRoute.get("/:id", async (req, res) => {
   const { id } = req.params;
@@ -44,7 +77,10 @@ auditRoute.get("/:id", async (req, res) => {
     }
     res.status(200).json({
       success: true,
-      audit: row.result,
+      audit: {
+        ...(row.result as object),
+        created_at: row.createdAt.toISOString(),
+      },
     });
   } catch {
     res.status(500).json({ error: "Failed to load audit" });
@@ -88,7 +124,7 @@ auditRoute.post("/", async (req, res) => {
 
   if (!(await checkAuditRateLimit(clientIp(req)))) {
     res.status(429).json({
-      error: "You’ve reached the free limit (2 audits every 12 hours for this IP).",
+      error: "You’ve reached the free limit (2 audits every 12 hours).",
     });
     return;
   }
@@ -117,7 +153,10 @@ auditRoute.post("/", async (req, res) => {
       success: true,
       auditId,
       fromDatabase: false,
-      audit,
+      audit: {
+        ...(audit as object),
+        created_at: new Date().toISOString(),
+      },
     });
   } catch (err) {
     if (err instanceof ScraperError) {

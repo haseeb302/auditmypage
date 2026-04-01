@@ -4,7 +4,6 @@ import { errorHandler } from "./error";
 import { requestLogger } from "./logger";
 import { healthRoute } from "./routes";
 import { auditRoute } from "./service/audit";
-import { scrapeRoute } from "./service/scrape";
 
 const app = express();
 const PORT = Number.parseInt(process.env.PORT ?? "4000", 10);
@@ -13,7 +12,6 @@ app.use(express.json({ limit: "10kb" }));
 app.use(requestLogger);
 
 app.use("/api/health", healthRoute);
-app.use("/api/scrape", scrapeRoute);
 app.use("/api/audit", auditRoute);
 
 app.use((_req, res) => {

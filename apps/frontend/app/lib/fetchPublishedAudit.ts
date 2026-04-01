@@ -1,5 +1,5 @@
 import { scraperServiceBaseUrl } from "@/app/lib/scraperBaseUrl";
-import type { AuditResult } from "@/app/pageaudit/types";
+import type { AuditResult } from "@/app/types";
 
 /**
  * Loads a persisted audit from the scraper public GET (no API key).

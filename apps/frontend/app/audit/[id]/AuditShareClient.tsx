@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AuditResultsPage } from "@/app/pageaudit/components/AuditResultsPage";
-import { NavBar } from "@/app/pageaudit/components/NavBar";
-import { APP_CSS } from "@/app/pageaudit/design-system/theme";
-import type { AuditResult } from "@/app/pageaudit/types";
+import { AuditResultsPage } from "@/app/components/AuditResultsPage";
+import { NavBar } from "@/app/components/NavBar";
+import { APP_CSS } from "@/app/design-system/theme";
+import type { AuditResult } from "@/app/types";
 
 export function AuditShareClient({
   audit,
@@ -19,10 +19,14 @@ export function AuditShareClient({
     router.push("/");
   }
 
+  function goTryFree() {
+    router.push("/?focus=url");
+  }
+
   return (
     <>
       <style>{APP_CSS}</style>
-      <NavBar onHome={goHome} />
+      <NavBar onHome={goHome} onTryFree={goTryFree} />
       <AuditResultsPage audit={audit} onBack={goHome} id={id} />
     </>
   );

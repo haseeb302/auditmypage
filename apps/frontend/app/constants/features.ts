@@ -1,4 +1,4 @@
-import type { Feature } from "../types";
+import type { Feature } from "@/app/types";
 
 export const LANDING_FEATURES: Feature[] = [
   {

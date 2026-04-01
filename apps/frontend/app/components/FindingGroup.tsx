@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
 import { SEVERITY_CONFIG, scoreColor } from "../design-system/theme";
-import type { AuditDimension } from "../types";
+import type { AuditDimension } from "@/app/types";
 
 type FindingGroupProps = {
   dim: AuditDimension;
@@ -21,7 +21,11 @@ export function FindingGroup({ dim, index }: FindingGroupProps) {
       className="finding-group"
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: index * 0.06 }}
+      transition={{
+        duration: 0.5,
+        ease: [0.22, 1, 0.36, 1],
+        delay: index * 0.06,
+      }}
     >
       <div className="finding-group-header" onClick={() => setOpen((o) => !o)}>
         <div className="finding-group-left">
@@ -69,7 +73,10 @@ export function FindingGroup({ dim, index }: FindingGroupProps) {
                       borderColor: sev.border,
                     }}
                   >
-                    <div className="finding-sev-dot" style={{ background: sev.color }} />
+                    <div
+                      className="finding-sev-dot"
+                      style={{ background: sev.color }}
+                    />
                     {sev.label}
                   </div>
                   <div className="finding-issue">{finding.issue}</div>

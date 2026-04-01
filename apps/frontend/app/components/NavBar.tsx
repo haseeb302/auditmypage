@@ -2,9 +2,10 @@
 
 type NavBarProps = {
   onHome: () => void;
+  onTryFree: () => void;
 };
 
-export function NavBar({ onHome }: NavBarProps) {
+export function NavBar({ onHome, onTryFree }: NavBarProps) {
   return (
     <nav className="nav">
       <a className="nav-logo" onClick={onHome} style={{ cursor: "pointer" }}>
@@ -12,10 +13,7 @@ export function NavBar({ onHome }: NavBarProps) {
         PageAudit
       </a>
       <div className="nav-right">
-        <button className="nav-btn" onClick={onHome}>
-          Home
-        </button>
-        <button className="nav-cta" onClick={onHome}>
+        <button className="nav-cta" onClick={onTryFree}>
           Try free →
         </button>
       </div>

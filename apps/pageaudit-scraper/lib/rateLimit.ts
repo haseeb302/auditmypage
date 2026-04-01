@@ -33,4 +33,3 @@ export async function checkAuditRateLimit(ip: string): Promise<boolean> {
   }
   return count <= LIMIT;
 }
-

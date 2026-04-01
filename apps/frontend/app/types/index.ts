@@ -18,6 +18,7 @@ export type AuditResult = {
   url: string;
   score: number;
   scanned_at: string;
+  created_at?: string;
   dimensions: AuditDimension[];
 };
 
