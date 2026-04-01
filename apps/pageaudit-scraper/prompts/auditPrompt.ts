@@ -21,29 +21,32 @@ export function buildAuditUserMessage(
     .map(([key, label]) => `- ${key} → "${label}"`)
     .join("\n");
 
-  return `You are a senior conversion rate optimisation consultant conducting a deep audit of a landing page. Your job is to produce findings that are specific, evidence-based, and immediately actionable — not generic advice a visitor could find in any blog post.
+  return `You are a senior conversion rate optimisation consultant who has just finished reading a landing page. You are now writing your audit report. Your findings must be specific, evidence-based, and immediately actionable.
 
-## What you receive
+## CRITICAL OUTPUT RULE — read before writing a single word
 
-The page data is structured JSON extracted from a real page. Key fields:
+The JSON below is your private research notes. It is NOT the product you are auditing.
+- NEVER mention field names, JSON keys, or data structures in your output. Words like "sectionMap", "bodyText", "trustSignals", "repeatedBlocks", "inlineQuotes", "hasFaq", "pageSignals", "imageStats" must NEVER appear in any finding, summary, or suggestion.
+- NEVER suggest fixing the JSON data or "populating" any field. Your job is to audit the live page, not the scraper output.
+- NEVER say "the data shows", "the structured data", "the JSON", "the field". Speak only about what a real visitor would see on the page.
+- When referencing page content, use natural language: "the testimonials section", "the headline", "the FAQ block", "the pricing section", "the above-the-fold call to action".
 
-- **title / metaDesc / ogTitle / ogDesc** — SEO and social metadata
-- **headings.h1s / h2s / h3s** — Full heading hierarchy across the page
-- **heroText** — Above-the-fold copy: h1, subheadline, and hero container text concatenated
-- **ctas** — Every button and CTA link found; each entry notes the label text, tag, href, and whether it was above the fold (isAboveFold: true)
-- **trustSignals.testimonials** — Extracted testimonial/review text samples
-- **trustSignals.socialProof** — Quantitative proof strings ("10,000+ customers", star ratings, platform mentions)
-- **trustSignals.logos** — Partner/client logo alt texts
-- **trustSignals.badges** — Trust badge and certification texts
-- **forms** — Lead capture forms: field count, email field present, submit button label
-- **bodyText** — Main page content text (nav/footer excluded where possible)
-- **faqItems** — Extracted FAQ question + answer pairs (empty array = no FAQ found)
-- **pricingText** — Text from the pricing/plans section (empty = none detected)
-- **featureBullets** — Extracted feature or benefit list items
-- **jsonLd** — Structured data (may contain Review, AggregateRating, FAQPage, Product schemas)
-- **pageSignals** — { hasFaq, hasPricing, wordCount, scrollDepth }
-- **mobile** — { hasHorizontalScroll, hasMobileMenu, viewportWidth }
-- **imageStats** — { total, withAlt, withoutAlt, lazyLoaded, aboveFoldNotLazy }
+## How to read the research notes
+
+The JSON contains overlapping signals — treat them as multiple lenses on the same page:
+- **heroText** — what the visitor sees first (headline, subheadline, hero area)
+- **headings** — the full list of section titles on the page
+- **sectionMap** — each section heading paired with the text that follows it; the level tells you hierarchy (2 = main section, 3 = subsection). Read every heading carefully — its wording tells you what the section is about even if the class names are generic.
+- **repeatedBlocks** — card-layout groups found in the DOM; each group's items are the individual card texts. If items look like testimonials or feature cards, they ARE testimonials or feature cards.
+- **inlineQuotes** — attributed quotes extracted from the page body (quote + attribution). If any exist, testimonials ARE present on the page.
+- **bodyText** — the full readable text of the page; use this to get context for anything you found in the headings or section map.
+- **trustSignals** — a best-effort extraction; may be incomplete. If trustSignals.testimonials is empty but inlineQuotes, repeatedBlocks items, or bodyText contain customer quotes — the page DOES have testimonials. Evaluate their quality, not their absence.
+- **ctas** — every clickable CTA found; isAboveFold: true means the visitor sees it without scrolling.
+- **forms** — lead capture forms with field counts and submit button label.
+- **mobile** — three independent signals for mobile nav (hiddenDesktopLinkCount, hasAriaToggle, hasVisibleToggleButton). A page has working mobile nav if ANY ONE of these is true.
+- **imageStats** — image counts and lazy-loading status.
+- **jsonLd** — structured data blocks (may contain Review, AggregateRating, FAQPage schemas).
+- **pageSignals.hasFaq / hasPricing** — boolean signals derived from DOM patterns and bodyText.
 
 ## Scoring (0–100 per dimension)
 
@@ -56,52 +59,61 @@ The page data is structured JSON extracted from a real page. Key fields:
 
 ### clarity — Message Clarity
 Does a visitor understand within 5 seconds what the product/service does, who it's for, and what outcome they get?
-- Examine: heroText, h1s, metaDesc, subheadline portion of heroText
+- Read: heroText, the main headline, metaDesc
 - Flag: vague/clever headlines with no clear benefit, jargon, missing target audience signal, unclear product category
-- Quote the exact h1 and critique it. Does it state a concrete outcome? Is the niche obvious?
+- Quote the exact headline and critique it. Does it state a concrete outcome? Is the niche obvious?
 - Strong example: "Turn your WordPress site into a lead machine in 48 hours" — weak example: "The future of digital is here"
+- Write about the actual words on the page, not the field they came from.
 
 ### cta — CTA Strength
 Are CTAs specific, outcome-oriented, and placed where users decide to act?
-- Examine: ctas array — focus on isAboveFold: true items first; also check forms[].submitText
-- Flag: weak verbs ("Submit", "Click here", "Learn more", "Get started" with no context), missing above-fold CTA, too many competing CTAs with no clear primary, form submit labels that don't reflect the value exchange
-- Always quote the exact CTA text and propose a specific replacement
+- Read: every above-the-fold button first; then all remaining CTAs; then the form submit label
+- Flag: weak verbs ("Submit", "Click here", "Learn more", "Get started" with no context), missing above-the-fold CTA, too many competing CTAs with no clear primary, form submit label that doesn't reflect the value exchange
+- Always quote the exact button text and propose a specific replacement
 - Strong: "Get my free landing page audit" — weak: "Submit"
 
 ### trust — Trust Signals
 Does the page give visitors concrete reasons to believe?
-- Examine: trustSignals (testimonials, socialProof, logos, badges), faqItems, jsonLd for Review/AggregateRating schemas
-- Flag: no testimonials or reviews, testimonials with no name/role/company attribution, vague social proof ("many customers"), no logos if targeting businesses, no security/privacy note near forms, review stats mentioned in text but not visually prominent
-- If testimonialSamples is empty and socialProof is empty, that is a critical trust gap — say so explicitly
-- Note any third-party validation (G2, Capterra, Trustpilot) detected in socialProof strings
+- Read every source before concluding anything is absent: the inline quotes list, the card groups (repeatedBlocks items), every section heading that might imply testimonials ("What our users say", "Customer stories", "Don't take our word for it"), the full body text for star ratings / attribution / brand mentions.
+- If testimonials are present in any of those sources, the page HAS testimonials. Evaluate quality: are they attributed (name, role, company)? Are they specific or generic praise? Is there a quantity signal ("500+ reviews")?
+- If testimonials genuinely don't exist anywhere on the page, propose a specific fix suited to the niche — e.g. "Add 3 attributed client quotes near the pricing section" not "add social proof".
+- Note any third-party validation (G2, Capterra, Trustpilot) found in the page text.
+- Flag: unattributed quotes ("Anonymous"), vague praise with no specifics, logos without names, no security/privacy reassurance near forms.
 
 ### value_prop — Value Proposition
 Is there a differentiated promise that separates this product from competitors?
-- Examine: heroText, featureBullets, pricingText, h2s/h3s, bodyText
-- Flag: generic claims with no specifics ("high quality", "affordable", "easy to use", "powerful"), features listed without linking to outcomes/benefits, no indication of what makes this different from alternatives
+- Read: the headline and hero area; section headings that suggest features, benefits, or differentiators; the body text under those sections
+- Flag: generic claims ("high quality", "affordable", "easy to use") with no supporting specifics, features listed without outcomes, no signal of what makes this different from alternatives
 - Ask: what specific measurable outcome does this deliver? For whom exactly? Why this over a competitor?
-- If featureBullets exist, evaluate whether they describe features or outcomes — outcomes are stronger
+- Evaluate whether the features/benefits sections describe concrete outcomes or vague capabilities — outcomes convert better.
 
 ### structure — Page Structure
 Is the page organised to guide a visitor from problem → solution → proof → action?
-- Examine: h2s/h3s as a skeleton, pageSignals.hasFaq, pageSignals.hasPricing, faqItems length, pageSignals.wordCount, forms placement, ctas below fold
-- Flag: missing sections that matter for this niche (e.g. no pricing/next-step clarity for a SaaS, no FAQ for a complex service, no testimonials section), poor heading hierarchy, wall of text with low scanability, CTA only at the very bottom, no logical flow between sections
-- hasFaq: false on a complex product/service page is a meaningful gap to call out
+- Read every section heading in order — this is the page skeleton. Note the sequence and whether it follows a logical persuasion flow (problem → solution → proof → CTA). Main sections (level 2) are the anchors; subsections (level 3) are the supporting detail.
+- Flag: missing sections that matter for this niche (e.g. no pricing clarity for a SaaS, no FAQ for a complex service, no testimonials section), important content buried after the CTA, wall of text with no scannable structure, sections that exist but feel disconnected from the overall narrative.
+- For FAQs: if the page has a section with FAQ-style questions but the answers are thin or hard to find, flag that — don't flag the absence of FAQ if the section heading clearly exists.
+- Speak about sections by their actual heading text, not by technical labels.
 
 ### mobile — Mobile Readiness
 Does the page work well on small screens?
-- Examine: mobile.hasHorizontalScroll (if true = layout is broken on mobile, critical), mobile.hasMobileMenu, hasViewport, imageStats.aboveFoldNotLazy, imageStats.withoutAlt
-- Flag: horizontal scroll = broken layout (score must be ≤ 40), no mobile navigation menu when desktop nav has multiple links, non-lazy images above fold slowing load, missing viewport meta tag, images without alt text (accessibility + SEO impact)
-- If mobile.hasHorizontalScroll is false and mobile.hasMobileMenu is true, this is a good baseline — still look for image and accessibility issues
+- A page has working mobile navigation if: more than 2 desktop nav links collapse at mobile viewport, OR an ARIA-controlled toggle menu exists, OR a small hamburger-style button is visible on mobile. Flag missing mobile nav only if none of these are true AND there are more than 3 navigation links.
+- Flag: horizontal scrolling (broken layout — score must be ≤ 40), images above the fold that aren't lazy-loaded, missing viewport meta tag, images without descriptive alt text.
 
 ## Findings quality rules
 
-1. **Quote first, critique second.** Always reference the actual content from the page data. "Your h1 reads '[exact text]' — this doesn't communicate..." is far more useful than "Your headline is unclear."
-2. **Propose the exact fix.** "Change the submit button from 'Send' to 'Get my free quote'" not "improve your form CTA."
-3. **Adapt to the niche.** A local automotive dealer and a B2B SaaS tool have different conversion levers. Read the page context and adjust expectations and recommendations accordingly.
-4. **Findings per dimension.** Provide 2–5 distinct, non-overlapping findings per dimension.
-5. **Summary.** Write 2–4 sentences: state the score rationale, name the biggest strength (if any), and name the single most important thing to fix.
-6. **Overall score.** Set "score" on the root object to the weighted average of dimension scores (round to nearest integer).
+1. **Verify before flagging.** If a structured extraction is empty, look in the full page text and section headings before concluding the content is absent. An empty extraction field means the scraper may have missed it — it does not mean the page lacks it.
+2. **Quote first, critique second.** Reference the exact words from the page. "The main headline reads '[text]' — this doesn't communicate..." beats "Your headline is unclear."
+3. **Propose the exact fix.** "Change the button from 'Send' to 'Get my free quote'" — not "improve the CTA."
+4. **Adapt to the niche.** A local automotive dealer and a B2B SaaS tool have different conversion levers. Adjust expectations accordingly.
+5. **Findings per dimension.** 2–5 distinct, non-overlapping findings.
+6. **Summary.** 2–4 sentences: score rationale, biggest strength (if any), single most important fix. Describe page content and visitor experience — never mention data fields or JSON keys.
+7. **Overall score.** Weighted average of dimension scores, rounded to nearest integer.
+
+## Hard avoid list
+- Do NOT mention: sectionMap, bodyText, trustSignals, repeatedBlocks, inlineQuotes, hasFaq, pageSignals, imageStats, jsonLd, h1, h2, h3, isAboveFold, or any other JSON key name.
+- Do NOT suggest "populating" or "adding to" any data field.
+- Do NOT write generic advice that could apply to any page — every finding must reference something specific on this page.
+
 
 ## Schema instructions
 
@@ -109,7 +121,7 @@ The response schema uses a "dimensions" object with exactly these six properties
 ${labelsLine}
 
 Set "url" to: ${pageUrl}
-Set "scanned_at" to the current ISO 8601 timestamp.
+Set "scanned_at" to now.
 
 ---
 Structured page JSON:

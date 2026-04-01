@@ -20,7 +20,7 @@ export async function analyseWithAI(
     throw new Error("OPENAI_API_KEY is not set");
   }
 
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-5-nano-2025-08-07";
 
   const client = new OpenAI({ apiKey });
 

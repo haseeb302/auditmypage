@@ -115,9 +115,9 @@ export function LandingPage({ onRegisterUrlFocus }: LandingPageProps) {
           </motion.h1>
 
           <motion.p className="hero-sub" variants={fadeUp} custom={2}>
-            Paste any URL. In 30 seconds get a scored report covering message
-            clarity, CTA strength, trust signals, and mobile readiness — with
-            specific fixes.
+            Paste any URL. In less than 60 seconds get a scored report covering
+            message clarity, CTA strength, trust signals, and mobile readiness —
+            with specific fixes.
           </motion.p>
 
           <motion.form

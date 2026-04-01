@@ -67,9 +67,9 @@ type RawDesktop = {
   imageLazyLoaded: number;
   imageAboveFoldNotLazy: number;
   bodyText: string;
-  faqItems: Array<{ q: string; a: string }>;
-  pricingText: string;
-  featureBullets: string[];
+  sectionMap: Array<{ level: number; heading: string; content: string }>;
+  repeatedBlocks: Array<{ items: string[] }>;
+  inlineQuotes: Array<{ quote: string; attribution: string }>;
   jsonLd: unknown[];
   hasFaq: boolean;
   hasPricing: boolean;
@@ -79,7 +79,11 @@ type RawDesktop = {
 
 type RawMobile = {
   hasHorizontalOverflow: boolean;
-  hasMobileMenu: boolean;
+  mobileNav: {
+    hiddenDesktopLinkCount: number;
+    hasAriaToggle: boolean;
+    hasVisibleToggleButton: boolean;
+  };
 };
 
 function mapNavigationError(error: unknown): ScraperError {
@@ -162,9 +166,9 @@ function toPageData(
       aboveFoldNotLazy: d.imageAboveFoldNotLazy,
     },
     bodyText: d.bodyText,
-    faqItems: d.faqItems,
-    pricingText: d.pricingText,
-    featureBullets: d.featureBullets,
+    sectionMap: d.sectionMap,
+    repeatedBlocks: d.repeatedBlocks,
+    inlineQuotes: d.inlineQuotes,
     jsonLd,
     pageSignals: {
       hasFaq: d.hasFaq,
@@ -174,7 +178,7 @@ function toPageData(
     },
     mobile: {
       hasHorizontalScroll: m.hasHorizontalOverflow,
-      hasMobileMenu: m.hasMobileMenu,
+      mobileNav: m.mobileNav,
       viewportWidth: MOBILE_VIEWPORT.width,
     },
     scrapedAt,
@@ -542,133 +546,145 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
       }
     }
 
-    // ── FAQ extraction ─────────────────────────────────────────────────────────
-    const faqItems: Array<{ q: string; a: string }> = [];
+    // ── Section map: heading → following content ──────────────────────────────
+    // Captures every h2/h3/h4 and the text block that follows it so the AI can
+    // classify sections by reading their actual heading text (e.g. "Here's what
+    // our users say" → testimonials) without any CSS class matching.
+    const sectionMap: Array<{ level: number; heading: string; content: string }> = [];
+    const allSectionHeadings = Array.from(
+      document.querySelectorAll("h2, h3, h4"),
+    ).slice(0, 30);
 
-    // Method 1: <details>/<summary> accordion pattern
-    for (const detail of Array.from(
-      document.querySelectorAll("details"),
-    ).slice(0, 20)) {
-      const summary = detail.querySelector("summary");
-      if (!summary) continue;
-      const q = ((summary as HTMLElement).innerText ?? summary.textContent ?? "")
+    for (const heading of allSectionHeadings) {
+      const level = parseInt(heading.tagName[1], 10);
+      const headingText = (
+        (heading as HTMLElement).innerText ?? heading.textContent ?? ""
+      )
         .replace(/\s+/g, " ")
         .trim();
-      if (!q || q.length < 5) continue;
-      const clone = detail.cloneNode(true) as HTMLElement;
-      clone.querySelector("summary")?.remove();
-      const a = (clone.innerText || clone.textContent || "")
-        .replace(/\s+/g, " ")
-        .trim();
-      if (q && a) faqItems.push({ q: q.slice(0, 250), a: a.slice(0, 600) });
-      if (faqItems.length >= 12) break;
-    }
+      if (headingText.length < 2 || headingText.length > 200) continue;
 
-    // Method 2: FAQ section with heading + sibling paragraph/div pattern
-    if (faqItems.length < 3) {
-      const faqSection = document.querySelector(
-        "[class*='faq'], [id*='faq'], [class*='FAQ'], [id*='FAQ'], " +
-          "[class*='accordion'], [id*='accordion']",
-      );
-      if (faqSection) {
-        const questionEls = Array.from(
-          faqSection.querySelectorAll(
-            "h2, h3, h4, dt, " +
-              "[class*='question'], [class*='title'], [class*='heading'], [class*='trigger'], [class*='toggle']",
-          ),
-        );
-        for (const qEl of questionEls.slice(0, 15)) {
-          const q = (
-            (qEl as HTMLElement).innerText ?? qEl.textContent ?? ""
-          )
-            .replace(/\s+/g, " ")
-            .trim();
-          if (!q || q.length < 5) continue;
-          let next = qEl.nextElementSibling;
-          while (next && ["H2", "H3", "H4", "DT"].includes(next.tagName)) {
-            next = next.nextElementSibling;
-          }
-          if (next) {
-            const a = (
-              (next as HTMLElement).innerText ?? next.textContent ?? ""
-            )
-              .replace(/[^\S\n]+/g, " ")
-              .replace(/\n{3,}/g, "\n\n")
-              .trim()
-              .slice(0, 600);
-            if (a.length > 5) faqItems.push({ q: q.slice(0, 250), a });
-          }
-          if (faqItems.length >= 12) break;
-        }
-      }
-    }
+      // Tags that stop content collection (same or higher heading level)
+      const stopAtLevel2 = ["H1", "H2"];
+      const stopAtLevel3 = ["H1", "H2", "H3"];
+      const stopTags = level <= 2 ? stopAtLevel2 : stopAtLevel3;
 
-    // ── Pricing text ──────────────────────────────────────────────────────────
-    const pricingEl = document.querySelector(
-      "[class*='pricing'], [id*='pricing'], [class*='Pricing'], " +
-        "[class*='plans'], [id*='plans'], [class*='packages'], section[class*='plan']",
-    );
-    const pricingText = pricingEl
-      ? (
-          (pricingEl as HTMLElement).innerText ?? pricingEl.textContent ?? ""
+      const contentParts: string[] = [];
+      let next: Element | null = heading.nextElementSibling;
+      while (next) {
+        if (stopTags.includes(next.tagName)) break;
+        const t = (
+          (next as HTMLElement).innerText ?? next.textContent ?? ""
         )
           .replace(/[^\S\n]+/g, " ")
           .replace(/\n{3,}/g, "\n\n")
-          .trim()
-          .slice(0, 2500)
-      : "";
-
-    // ── Feature / benefit bullets ─────────────────────────────────────────────
-    const featureBullets: string[] = [];
-
-    const featureListSelectors = [
-      "[class*='feature'] li",
-      "[class*='features'] li",
-      "[class*='benefit'] li",
-      "[class*='benefits'] li",
-      "[class*='advantage'] li",
-      "[class*='advantages'] li",
-      "[class*='include'] li",
-      "[class*='why'] li",
-      "[class*='what-you-get'] li",
-      "[class*='offer'] li",
-    ];
-
-    for (const sel of featureListSelectors) {
-      const items = Array.from(document.querySelectorAll(sel));
-      const texts = items
-        .map((el) =>
-          ((el as HTMLElement).innerText ?? el.textContent ?? "")
-            .replace(/\s+/g, " ")
-            .trim(),
-        )
-        .filter((t) => t.length > 5 && t.length < 250);
-      if (texts.length >= 3) {
-        featureBullets.push(...texts.slice(0, 15));
-        break;
+          .trim();
+        if (t.length > 5) contentParts.push(t);
+        if (contentParts.join("").length >= 600) break;
+        next = next.nextElementSibling;
       }
+
+      // Fallback: if heading is isolated in a wrapper, grab the parent's text
+      if (contentParts.length === 0 && heading.parentElement) {
+        const parentText = (
+          (heading.parentElement as HTMLElement).innerText ??
+          heading.parentElement.textContent ??
+          ""
+        )
+          .replace(/[^\S\n]+/g, " ")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        const withoutHeading = parentText.replace(headingText, "").trim();
+        if (withoutHeading.length > 5) contentParts.push(withoutHeading);
+      }
+
+      sectionMap.push({
+        level,
+        heading: headingText,
+        content: contentParts.join("\n\n").slice(0, 600),
+      });
+      if (sectionMap.length >= 20) break;
     }
 
-    if (featureBullets.length === 0) {
-      const mainEl = document.querySelector(
-        'main, [role="main"], article, #content, .content',
-      );
-      const searchRoot = mainEl || document.body;
-      for (const ul of Array.from(searchRoot.querySelectorAll("ul")).slice(
-        0,
-        10,
-      )) {
-        const items = Array.from(ul.querySelectorAll("li"))
-          .map((el) =>
-            ((el as HTMLElement).innerText ?? el.textContent ?? "")
-              .replace(/\s+/g, " ")
-              .trim(),
-          )
-          .filter((t) => t.length > 5 && t.length < 250);
-        if (items.length >= 3) {
-          featureBullets.push(...items.slice(0, 12));
-          if (featureBullets.length >= 12) break;
-        }
+    // ── Repeated sibling blocks (card layouts — testimonials, features, etc.) ─
+    // Detects groups of 3+ structurally similar siblings regardless of class names.
+    const repeatedBlocks: Array<{ items: string[] }> = [];
+    const rbVisited = new WeakSet<Element>();
+
+    const rbContainers = Array.from(
+      document.querySelectorAll(
+        "section, main > div, article, " +
+          "[class*='grid'], [class*='cards'], [class*='features'], " +
+          "[class*='testimonials'], [class*='reviews'], [class*='team']",
+      ),
+    ).slice(0, 25);
+
+    for (const container of rbContainers) {
+      if (rbVisited.has(container)) continue;
+      const children = Array.from(container.children);
+      if (children.length < 3) continue;
+
+      // Find which child tag appears most (the "card" element)
+      const tagMap: Record<string, Element[]> = {};
+      for (const child of children) {
+        if (!tagMap[child.tagName]) tagMap[child.tagName] = [];
+        tagMap[child.tagName].push(child);
+      }
+      let dominantGroup: Element[] = [];
+      for (const group of Object.values(tagMap)) {
+        if (group.length > dominantGroup.length) dominantGroup = group;
+      }
+      if (dominantGroup.length < 3) continue;
+
+      const texts = dominantGroup.slice(0, 8).map((el) =>
+        (
+          (el as HTMLElement).innerText ?? el.textContent ?? ""
+        )
+          .replace(/[^\S\n]+/g, " ")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim(),
+      ).filter((t) => t.length > 20 && t.length < 700);
+
+      if (texts.length < 3) continue;
+
+      // Reject if text lengths are wildly dissimilar (e.g. nav items mixed with cards)
+      const lengths = texts.map((t) => t.length);
+      const minLen = Math.min(...lengths);
+      const maxLen = Math.max(...lengths);
+      if (maxLen > 0 && minLen / maxLen < 0.08) continue;
+
+      rbVisited.add(container);
+      repeatedBlocks.push({ items: texts.slice(0, 6) });
+      if (repeatedBlocks.length >= 4) break;
+    }
+
+    // ── Inline quotes (testimonials not in a container) ───────────────────────
+    // Regex scan for "quoted text" — attribution patterns in the raw body text.
+    const inlineQuotes: Array<{ quote: string; attribution: string }> = [];
+
+    const quoteEmDash = /"([^"]{20,350})"[^a-zA-Z0-9]{0,10}[—–-]\s*([^\n"]{3,100})/g;
+    const singleEmDash = /'([^']{20,350})'[^a-zA-Z0-9]{0,10}[—–-]\s*([^\n']{3,100})/g;
+
+    let qMatch;
+    while (
+      (qMatch = quoteEmDash.exec(bodyTextFull)) !== null &&
+      inlineQuotes.length < 8
+    ) {
+      inlineQuotes.push({
+        quote: qMatch[1].trim(),
+        attribution: qMatch[2].trim(),
+      });
+    }
+    if (inlineQuotes.length < 3) {
+      let sqMatch;
+      while (
+        (sqMatch = singleEmDash.exec(bodyTextFull)) !== null &&
+        inlineQuotes.length < 8
+      ) {
+        inlineQuotes.push({
+          quote: sqMatch[1].trim(),
+          attribution: sqMatch[2].trim(),
+        });
       }
     }
 
@@ -685,28 +701,26 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
           .replace(/[^\S\n]+/g, " ")
           .replace(/\n{3,}/g, "\n\n")
           .trim()
-          .slice(0, 14000)
+          .slice(0, 20000)
       : bodyTextFull
           .replace(/[^\S\n]+/g, " ")
           .replace(/\n{3,}/g, "\n\n")
           .trim()
-          .slice(0, 14000);
+          .slice(0, 20000);
 
     // ── Page signals ──────────────────────────────────────────────────────────
     const hasFaq = !!(
-      faqItems.length > 0 ||
-      document.querySelector(
-        "[class*='faq'], [id*='faq'], [class*='accordion']",
-      ) ||
+      document.querySelector("[class*='faq'], [id*='faq'], [class*='accordion']") ||
       bodyTextFull.toLowerCase().includes("frequently asked") ||
-      bodyTextFull.toLowerCase().includes("common question")
+      bodyTextFull.toLowerCase().includes("common question") ||
+      sectionMap.some((s) => /faq|question/i.test(s.heading))
     );
 
     const hasPricing = !!(
-      pricingEl ||
       document.querySelector(
         "[class*='pricing'], [id*='pricing'], a[href*='pricing']",
-      )
+      ) ||
+      sectionMap.some((s) => /pric|plan|subscription/i.test(s.heading))
     );
 
     const scrollDepth = Math.max(
@@ -743,9 +757,9 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
         (i) => i.aboveFold && i.loading !== "lazy",
       ).length,
       bodyText,
-      faqItems,
-      pricingText,
-      featureBullets,
+      sectionMap,
+      repeatedBlocks,
+      inlineQuotes,
       jsonLd,
       hasFaq,
       hasPricing,
@@ -757,13 +771,52 @@ async function extractDesktop(page: Page): Promise<RawDesktop> {
 
 async function extractMobile(page: Page): Promise<RawMobile> {
   return page.evaluate(() => {
-    const hasMobileMenu = !!document.querySelector(
-      "[class*='hamburger'], [class*='mobile-menu'], [class*='menu-toggle'], [class*='nav-toggle'], [aria-label*='menu']",
-    );
     const hasHorizontalOverflow =
       document.documentElement.scrollWidth >
       document.documentElement.clientWidth;
-    return { hasHorizontalOverflow, hasMobileMenu };
+
+    // Count how many desktop nav links are hidden at this (mobile) viewport.
+    // A high number means the nav collapsed — a strong mobile-nav signal.
+    const navLinkEls = Array.from(
+      document.querySelectorAll("nav a[href], header nav a[href]"),
+    );
+    const hiddenDesktopLinkCount = navLinkEls.filter((a) => {
+      const s = window.getComputedStyle(a);
+      return (
+        s.display === "none" || s.visibility === "hidden" || s.opacity === "0"
+      );
+    }).length;
+
+    // ARIA-based toggle: any visible element that controls a collapsible menu.
+    // This works regardless of class naming — aria attributes are semantic.
+    const ariaEl = document.querySelector(
+      "[aria-expanded], [aria-controls], [aria-haspopup='true'], [aria-haspopup='menu']",
+    );
+    const hasAriaToggle = ariaEl
+      ? window.getComputedStyle(ariaEl).display !== "none" &&
+        window.getComputedStyle(ariaEl).visibility !== "hidden"
+      : false;
+
+    // Geometry-based toggle: a small visible button inside nav/header.
+    // Hamburger icons are typically ≤ 52px × 52px.
+    const toggleCandidates = Array.from(
+      document.querySelectorAll(
+        "nav button, header button, " +
+          "nav [role='button'], header [role='button'], " +
+          "[aria-label*='menu' i], [aria-label*='nav' i]",
+      ),
+    );
+    const hasVisibleToggleButton = toggleCandidates.some((el) => {
+      const s = window.getComputedStyle(el);
+      if (s.display === "none" || s.visibility === "hidden") return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.width <= 64 && rect.height > 0;
+    });
+
+    return {
+      hasHorizontalOverflow,
+      mobileNav: { hiddenDesktopLinkCount, hasAriaToggle, hasVisibleToggleButton },
+    };
   });
 }
 

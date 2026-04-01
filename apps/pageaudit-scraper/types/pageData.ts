@@ -36,9 +36,12 @@ export type PageData = {
     aboveFoldNotLazy: number;
   };
   bodyText: string;
-  faqItems: Array<{ q: string; a: string }>;
-  pricingText: string;
-  featureBullets: string[];
+  /** Every h2/h3/h4 heading mapped to the text block that follows it. */
+  sectionMap: Array<{ level: number; heading: string; content: string }>;
+  /** Groups of 3+ structurally similar sibling elements (card layouts). */
+  repeatedBlocks: Array<{ items: string[] }>;
+  /** Quoted-text + attribution patterns extracted from raw body text. */
+  inlineQuotes: Array<{ quote: string; attribution: string }>;
   jsonLd: object[];
   pageSignals: {
     hasFaq: boolean;
@@ -48,7 +51,15 @@ export type PageData = {
   };
   mobile: {
     hasHorizontalScroll: boolean;
-    hasMobileMenu: boolean;
+    /** Three independent signals — evaluated together, not in isolation. */
+    mobileNav: {
+      /** Nav links hidden at 375 px viewport (collapsed nav = high count). */
+      hiddenDesktopLinkCount: number;
+      /** Visible element with aria-expanded / aria-controls / aria-haspopup. */
+      hasAriaToggle: boolean;
+      /** Small visible button in nav/header (hamburger geometry ≤ 64 px). */
+      hasVisibleToggleButton: boolean;
+    };
     viewportWidth: number;
   };
   scrapedAt: string;
