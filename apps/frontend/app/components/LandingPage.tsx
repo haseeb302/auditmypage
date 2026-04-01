@@ -46,9 +46,27 @@ export function LandingPage({ onRegisterUrlFocus }: LandingPageProps) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
+  const [slowAudit, setSlowAudit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sampleLoading, setSampleLoading] = useState<string | null>(null);
   const urlInputRef = useRef<HTMLInputElement | null>(null);
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (loading) {
+      setSlowAudit(false);
+      slowTimerRef.current = setTimeout(() => setSlowAudit(true), 30_000);
+    } else {
+      setSlowAudit(false);
+      if (slowTimerRef.current) {
+        clearTimeout(slowTimerRef.current);
+        slowTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+    };
+  }, [loading]);
 
   useEffect(() => {
     onRegisterUrlFocus(() => {
@@ -165,6 +183,36 @@ export function LandingPage({ onRegisterUrlFocus }: LandingPageProps) {
                     </div>
                   ))}
                 </div>
+
+                <AnimatePresence>
+                  {slowAudit && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      style={{
+                        marginTop: 14,
+                        fontSize: 13,
+                        color: "var(--ink-2)",
+                        textAlign: "center",
+                      }}
+                    >
+                      Still auditing — this page is taking a little longer than
+                      usual. Your report will be ready in a few seconds.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+
+                <p
+                  style={{
+                    marginTop: 12,
+                    fontSize: 12,
+                    color: "var(--ink-3, #aaa)",
+                    textAlign: "center",
+                  }}
+                >
+                  Please keep this tab open while the audit is running.
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
